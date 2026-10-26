@@ -123,5 +123,5 @@ docs/
 ```
 * Zabbix Problems page during an active alert, and again after it clears
 * The trigger configuration (final expression)
-* The Alert Log or Summary tab of the incident spreadsheet
+* The Alert Log or Summary tab of the incident spreadsheets
 
