@@ -1,0 +1,105 @@
+# Home NOC Lab - monitoring stack (Zabbix 7.0 LTS + PostgreSQL + optional Grafana)
+# Run from the folder that contains this file and a .env file (copy env.example to .env).
+#   Start core stack:        docker compose up -d
+#   Start with dashboards:   docker compose --profile dashboards up -d
+#   Stop (keep data):        docker compose down
+#   Stop and wipe all data:  docker compose down -v
+
+name: noc-lab
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - noc-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:alpine-7.0-latest
+    restart: unless-stopped
+    environment:
+      DB_SERVER_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "10051:10051"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - noc-net
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+    restart: unless-stopped
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      ZBX_SERVER_NAME: NOC Lab
+      DB_SERVER_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PHP_TZ: ${TZ}
+    ports:
+      - "8080:8080"
+    depends_on:
+      - zabbix-server
+    networks:
+      - noc-net
+
+  # Agent that monitors the Docker environment itself. The default "Zabbix server" host
+  # in the web UI is pointed at this container (see the guide, Part 3).
+  zabbix-agent:
+    image: zabbix/zabbix-agent2:alpine-7.0-latest
+    restart: unless-stopped
+    hostname: zabbix-agent
+    environment:
+      ZBX_HOSTNAME: Zabbix server
+      ZBX_SERVER_HOST: zabbix-server
+    depends_on:
+      - zabbix-server
+    networks:
+      - noc-net
+
+  # Practice target: a tiny web server you can stop and start to create real incidents.
+  web-target:
+    image: nginx:alpine
+    restart: unless-stopped
+    hostname: web-target
+    networks:
+      - noc-net
+
+  # Optional dashboards (only starts with: --profile dashboards)
+  grafana:
+    image: grafana/grafana:latest
+    profiles: ["dashboards"]
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_INSTALL_PLUGINS: alexanderzobnin-zabbix-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    networks:
+      - noc-net
+
+volumes:
+  postgres-data:
+  grafana-data:
+
+networks:
+  noc-net:
+    driver: bridge
