@@ -119,8 +119,7 @@ docker-compose.yml
 env.example            copy to .env (never commit .env)
 docs/
   Home\\\_NOC\\\_Lab\\\_Incident\\\_Log.xlsx
-  Home\\\_NOC\\\_Lab\\\_Guide.docx        (optional: full setup guide)
-screenshots/                     add your own screenshots here
+  Home\\\_NOC\\\_Lab\\\_Guide.docx 
 ```
 * Zabbix Problems page during an active alert, and again after it clears
 * The trigger configuration (final expression)
