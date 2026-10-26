@@ -122,11 +122,6 @@ docs/
   Home\\\_NOC\\\_Lab\\\_Guide.docx        (optional: full setup guide)
 screenshots/                     add your own screenshots here
 ```
-
-## Screenshots
-
-Add your own screenshots to the `screenshots/` folder and link them here. Good candidates:
-
 * Zabbix Problems page during an active alert, and again after it clears
 * The trigger configuration (final expression)
 * The Alert Log or Summary tab of the incident spreadsheet
